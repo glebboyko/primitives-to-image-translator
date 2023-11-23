@@ -3,15 +3,18 @@
 ImageCreator::ImageCreator(float px_per_mm, float line_width,
                            const Primitive::Coord& size)
     : px_per_mm_(px_per_mm), line_width_(line_width * px_per_mm_), size_(size) {
-  map_ = std::vector<std::vector<bool>>(
-      size_.y * px_per_mm_, std::vector<bool>(size_.x * px_per_mm_, false));
+  map_ = std::vector<std::vector<bool>>(size_.y,
+                                        std::vector<bool>(size_.x, false));
 }
 
 void ImageCreator::Draw(const Primitive& primitive) {
   auto graph = primitive.GetGraphic(px_per_mm_, line_width_);
 
   for (const auto& point : graph) {
-    map_[point.y][point.x] = true;
+    try {
+      map_.at(point.y).at(point.x) = true;
+    } catch (...) {
+    }
   }
 }
 
