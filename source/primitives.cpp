@@ -1,4 +1,4 @@
-#include "../include/primitives.hpp"
+#include "primitives.hpp"
 
 namespace Primitives {
 
