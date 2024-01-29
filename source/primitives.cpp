@@ -11,25 +11,6 @@ Coord& Segment::GetB() { return b_point_; }
 const Coord& Segment::GetA() const { return a_point_; }
 const Coord& Segment::GetB() const { return b_point_; }
 
-std::list<Coord> Segment::GetGraphic(float px_per_mm,
-                                              int line_width) const {
-  Segment normalized(a_point_ * px_per_mm, b_point_ * px_per_mm);
-  return normalized.GetGraphic();
-}
-
-float Segment::GetKCoefficient() const {
-  if (b_point_.x == a_point_.x) {
-    return MAXFLOAT;
-  }
-  return (static_cast<float>(b_point_.y - a_point_.y)) /
-         (b_point_.x - a_point_.x);
-}
-int Segment::GetBCoefficient() const {
-  return ((static_cast<int64_t>(b_point_.x) * a_point_.y) -
-          (static_cast<int64_t>(a_point_.x) * b_point_.y)) /
-         (b_point_.x - a_point_.x);
-}
-
 std::list<Coord> Segment::GetGraphic() const {
   Segment normalized(a_point_, b_point_);
   if (normalized.a_point_.x == normalized.b_point_.x &&
@@ -66,27 +47,17 @@ std::list<Coord> Segment::GetGraphic() const {
   return graphic;
 }
 
-std::list<Coord> Segment::GetGraphic(const Coord& a_point,
-                                              int lenth, float k_coefficient,
-                                              int b_coefficient) const {
-  std::list<Coord> graphic;
-
-  if (k_coefficient <= 1 && k_coefficient >= -1) {
-    for (int x = a_point.x; x < a_point.x + lenth; ++x) {
-      graphic.push_back(
-          {x, static_cast<int>(k_coefficient * x + b_coefficient)});
-    }
-  } else {
-    int inc = k_coefficient >= 0 ? 1 : -1;
-    for (int y = a_point.y;
-         inc > 0 ? y < a_point.y + lenth : y > a_point.y - lenth; y += inc) {
-      graphic.push_back(
-          {static_cast<int>(static_cast<float>(y) / k_coefficient -
-                            static_cast<float>(b_coefficient) / k_coefficient),
-           y});
-    }
+float Segment::GetKCoefficient() const {
+  if (b_point_.x == a_point_.x) {
+    return MAXFLOAT;
   }
-  return graphic;
+  return (static_cast<float>(b_point_.y - a_point_.y)) /
+         (b_point_.x - a_point_.x);
+}
+int Segment::GetBCoefficient() const {
+  return ((static_cast<int64_t>(b_point_.x) * a_point_.y) -
+          (static_cast<int64_t>(a_point_.x) * b_point_.y)) /
+         (b_point_.x - a_point_.x);
 }
 
 }  // namespace Primitives

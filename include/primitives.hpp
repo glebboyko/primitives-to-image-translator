@@ -17,8 +17,7 @@ struct Coord {
 
 class Primitive {
  public:
-  virtual std::list<Coord> GetGraphic(float px_per_mm,
-                                      int line_width) const = 0;
+  virtual std::list<Coord> GetGraphic() const = 0;
 };
 
 class Segment : public Primitive {
@@ -31,8 +30,7 @@ class Segment : public Primitive {
   const Coord& GetA() const;
   const Coord& GetB() const;
 
-  std::list<Coord> GetGraphic(float px_per_mm,
-                              int line_width = 1) const override;
+  std::list<Coord> GetGraphic() const override;
 
  private:
   Coord a_point_;
@@ -40,11 +38,6 @@ class Segment : public Primitive {
 
   float GetKCoefficient() const;
   int GetBCoefficient() const;
-
-  std::list<Coord> GetGraphic() const;
-
-  std::list<Coord> GetGraphic(const Coord& a_point, int lenth,
-                              float k_coefficient, int b_coefficient) const;
 };
 
 }  // namespace Primitives
