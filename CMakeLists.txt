@@ -3,5 +3,10 @@ project(ptit)
 
 set(CMAKE_CXX_STANDARD 20)
 
-#adding executables
-add_executable(ptit main.cpp primitives.cpp image-creator.cpp)
+include_directories(include)
+
+add_library(${PROJECT_NAME}
+        STATIC
+        source/image-creator.cpp source/primitives.cpp)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "lib_")

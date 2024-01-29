@@ -1,4 +1,4 @@
-#include "image-creator.hpp"
+#include "../include/image-creator.hpp"
 
 using namespace Primitives;
 
