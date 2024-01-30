@@ -7,13 +7,10 @@ struct Coord {
   int x;
   int y;
 
-  Coord operator*(float coef) const {
-    Coord ret = *this;
-    ret.x *= coef;
-    ret.y *= coef;
-    return ret;
-  }
+  Coord operator*(float coef) const;
 };
+
+double GetDistance(const Coord& first, const Coord& second) noexcept;
 
 class Primitive {
  public:

@@ -2,6 +2,20 @@
 
 namespace Primitives {
 
+Coord Coord::operator*(float coef) const {
+  Coord ret = *this;
+  ret.x *= coef;
+  ret.y *= coef;
+  return ret;
+}
+
+double GetDistance(const Coord& first, const Coord& second) noexcept {
+  double dx = second.x - first.x;
+  double dy = second.y - first.y;
+
+  return sqrt((dx * dx) + (dy * dy));
+}
+
 Segment::Segment(const Coord& a_point, const Coord& b_point)
     : a_point_(a_point), b_point_(b_point) {}
 
