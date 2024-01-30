@@ -7,10 +7,11 @@
 
 template <typename Container, typename Translator>
 concept ImageCreatorReq = requires(Container container, Translator translator) {
-  { translator(container[std::declval<ssize_t>()][std::declval<ssize_t>()]) };
+  translator(container[0][0]);
 };
 
-template <typename Container, ImageCreatorReq<Container> Translator>
+template <typename Container, typename Translator>
+  requires ImageCreatorReq<Container, Translator>
 void CreateImage(const char* image_file, const Container& image, ssize_t size_x,
                  ssize_t size_y, Translator translator) {
   std::ofstream img_file(image_file);
