@@ -43,18 +43,18 @@ std::list<Coord> Segment::GetGraphic() const {
   std::list<Coord> graphic;
 
   if (k_coefficient == MAXFLOAT) {
-    for (int y = normalized.a_point_.y; y < normalized.b_point_.y; ++y) {
+    for (int y = normalized.a_point_.y; y <= normalized.b_point_.y; ++y) {
       graphic.push_back({normalized.b_point_.x, y});
     }
   } else if (k_coefficient <= 1 && k_coefficient >= -1) {
-    for (int x = normalized.a_point_.x; x < normalized.b_point_.x; ++x) {
+    for (int x = normalized.a_point_.x; x <= normalized.b_point_.x; ++x) {
       graphic.push_back(
           {x, static_cast<int>(k_coefficient * x + b_coefficient)});
     }
   } else {
     int inc = k_coefficient >= 0 ? 1 : -1;
     for (int y = normalized.a_point_.y;
-         inc > 0 ? y < normalized.b_point_.y : y > normalized.b_point_.y;
+         inc > 0 ? y <= normalized.b_point_.y : y >= normalized.b_point_.y;
          y += inc) {
       graphic.push_back(
           {static_cast<int>(static_cast<float>(y) / k_coefficient -
@@ -62,7 +62,6 @@ std::list<Coord> Segment::GetGraphic() const {
            y});
     }
   }
-  graphic.push_back({normalized.b_point_});
   return graphic;
 }
 
