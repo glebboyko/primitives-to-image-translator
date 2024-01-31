@@ -1,5 +1,13 @@
 #include "primitives.hpp"
 
+#include <cmath>
+#include <cstdint>
+
+#ifndef MAXFLOAT
+#include <limits>
+#define MAXFLOAT std::numeric_limits<float>::max
+#endif
+
 namespace Primitives {
 
 Coord Coord::operator*(float coef) const {
