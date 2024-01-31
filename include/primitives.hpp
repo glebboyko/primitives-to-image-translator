@@ -10,6 +10,8 @@ struct Coord {
   Coord operator*(float coef) const;
 };
 
+bool operator==(const Coord&, const Coord&) noexcept;
+
 double GetDistance(const Coord& first, const Coord& second) noexcept;
 
 class Primitive {

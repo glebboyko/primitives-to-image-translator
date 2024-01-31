@@ -9,6 +9,10 @@ Coord Coord::operator*(float coef) const {
   return ret;
 }
 
+bool operator==(const Coord& first, const Coord& second) noexcept {
+  return first.x == second.x && first.y == second.y;
+}
+
 double GetDistance(const Coord& first, const Coord& second) noexcept {
   double dx = second.x - first.x;
   double dy = second.y - first.y;
