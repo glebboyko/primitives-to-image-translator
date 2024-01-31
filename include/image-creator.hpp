@@ -34,3 +34,9 @@ void CreateImage(const char* image_file, const Container& image, ssize_t size_x,
 
   img_file.close();
 }
+
+struct RGB {
+  short red;
+  short green;
+  short blue;
+};
