@@ -39,4 +39,6 @@ struct RGB {
   short red;
   short green;
   short blue;
+
+  const int kMaxColor = 255;
 };
