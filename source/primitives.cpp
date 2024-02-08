@@ -1,12 +1,10 @@
 #include "primitives.hpp"
 
+#include <float.h>
+
 #include <cmath>
 #include <cstdint>
-
-#ifndef MAXFLOAT
-#include <limits>
-#define MAXFLOAT std::numeric_limits<float>::max
-#endif
+#include <queue>
 
 namespace PTIT {
 
@@ -37,6 +35,14 @@ Coord& Segment::GetB() { return b_point_; }
 const Coord& Segment::GetA() const { return a_point_; }
 const Coord& Segment::GetB() const { return b_point_; }
 
+float GetKCoefficient(const Segment& segment) {
+  if (segment.GetB().x == segment.GetA().x) {
+    return FLT_MAX;
+  }
+  return (static_cast<float>(segment.GetB().y - segment.GetA().y)) /
+         (segment.GetB().x - segment.GetA().x);
+}
+
 std::list<Coord> Segment::GetGraphic() const {
   Segment normalized(a_point_, b_point_);
   if (normalized.a_point_.x == normalized.b_point_.x &&
@@ -45,12 +51,12 @@ std::list<Coord> Segment::GetGraphic() const {
     std::swap(normalized.a_point_, normalized.b_point_);
   }
 
-  float k_coefficient = normalized.GetKCoefficient();
+  float k_coefficient = GetKCoefficient(*this);
   int b_coefficient = normalized.GetBCoefficient();
 
   std::list<Coord> graphic;
 
-  if (k_coefficient == MAXFLOAT) {
+  if (k_coefficient == FLT_MAX) {
     for (int y = normalized.a_point_.y; y <= normalized.b_point_.y; ++y) {
       graphic.push_back({normalized.b_point_.x, y});
     }
@@ -73,17 +79,130 @@ std::list<Coord> Segment::GetGraphic() const {
   return graphic;
 }
 
-float Segment::GetKCoefficient() const {
-  if (b_point_.x == a_point_.x) {
-    return MAXFLOAT;
-  }
-  return (static_cast<float>(b_point_.y - a_point_.y)) /
-         (b_point_.x - a_point_.x);
-}
 int Segment::GetBCoefficient() const {
   return ((static_cast<int64_t>(b_point_.x) * a_point_.y) -
           (static_cast<int64_t>(a_point_.x) * b_point_.y)) /
          (b_point_.x - a_point_.x);
+}
+
+std::list<Coord> GetNeighbours(Coord point, int x_size, int y_size) {
+  std::list<Coord> neighbours;
+  for (int x = point.x - 1; x <= point.x + 1; ++x) {
+    for (int y = point.y - 1; y <= point.y + 1; ++y) {
+      if (x < 0 || y < 0 || x >= x_size || y >= y_size) {
+        continue;
+      }
+      if (x == point.x && y == point.y) {
+        continue;
+      }
+      neighbours.push_back({x, y});
+    }
+  }
+  return neighbours;
+}
+
+const Coord& GetLeft(const Coord& a_point, const Coord& b_point) noexcept {
+  if (a_point.x == b_point.x) {
+    return a_point.y <= b_point.y ? a_point : b_point;
+  }
+  return a_point.x < b_point.x ? a_point : b_point;
+}
+const Coord& GetRight(const Coord& a_point, const Coord& b_point) noexcept {
+  return &GetLeft(a_point, b_point) == &a_point ? b_point : a_point;
+}
+
+bool IsKBelongToRange(float k_coef, std::pair<float, float> k_range) noexcept {
+  if (k_coef == k_range.second && k_coef == FLT_MAX) {
+    return true;
+  }
+  return k_coef > k_range.first && k_coef < k_range.second;
+}
+
+std::list<Segment> GetNeighbourSegments(const Segment& segment) {
+  std::list<Segment> neighbours;
+
+  // a-left
+  neighbours.push_back({{segment.GetA().x - 1, segment.GetA().y},
+                        {segment.GetB().x + 1, segment.GetB().y}});
+  // a-right
+  neighbours.push_back({{segment.GetA().x + 1, segment.GetA().y},
+                        {segment.GetB().x - 1, segment.GetB().y}});
+  // a-up
+  neighbours.push_back({{segment.GetA().x, segment.GetA().y + 1},
+                        {segment.GetB().x, segment.GetB().y - 1}});
+  // a-down
+  neighbours.push_back({{segment.GetA().x, segment.GetA().y - 1},
+                        {segment.GetB().x, segment.GetB().y + 1}});
+
+  return neighbours;
+}
+std::pair<float, float> GetKRange(const Segment& segment) {
+  if (segment.GetA() == segment.GetB()) {
+    return {-FLT_MAX, FLT_MAX};
+  }
+
+  float k_min = GetKCoefficient(segment);
+  float k_max = k_min;
+  for (const auto& neighbour : GetNeighbourSegments(segment)) {
+    float neighbour_k = GetKCoefficient(neighbour);
+    k_min = std::min(k_min, neighbour_k);
+    k_max = std::max(k_max, neighbour_k);
+  }
+
+  return {k_min, k_max};
+}
+
+std::list<Segment> BaseExtractPrimitives(
+    std::vector<std::vector<bool>>& bitmap) {
+  if (bitmap.empty() || bitmap[0].empty()) {
+    return {};
+  }
+  std::list<Segment> primitives;
+
+  for (int x = 0; x < bitmap.size(); ++x) {
+    for (int y = 0; y < bitmap[0].size(); ++y) {
+      if (!bitmap[x][y]) {
+        continue;
+      }
+
+      Segment segment({x, y}, {x, y});
+      std::queue<Coord> neighbours;
+      std::pair<float, float> k_range = {-FLT_MAX, FLT_MAX};
+
+      neighbours.push(segment.GetA());
+
+      while (!neighbours.empty()) {
+        Coord point = neighbours.front();
+        neighbours.pop();
+
+        if (!bitmap[x][y]) {
+          continue;
+        }
+
+        const Coord& base_point = GetDistance(point, segment.GetA()) >
+                                          GetDistance(point, segment.GetB())
+                                      ? segment.GetA()
+                                      : segment.GetB();
+
+        Segment new_segm(GetLeft(point, base_point),
+                         GetRight(point, base_point));
+
+        float segment_k = GetKCoefficient({new_segm.GetA(), new_segm.GetB()});
+        if (IsKBelongToRange(segment_k, k_range)) {
+          bitmap[point.x][point.y] = false;
+          for (const Coord& neighbour :
+               GetNeighbours(point, bitmap.size(), bitmap[0].size())) {
+            neighbours.push(neighbour);
+          }
+          segment = new_segm;
+          k_range = GetKRange(segment);
+        }
+      }
+
+      primitives.push_back(segment);
+    }
+  }
+  return primitives;
 }
 
 }  // namespace PTIT

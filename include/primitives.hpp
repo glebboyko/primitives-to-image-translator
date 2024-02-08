@@ -1,5 +1,8 @@
 #pragma once
+
 #include <list>
+
+#include "concepts.hpp"
 
 namespace PTIT {
 
@@ -35,8 +38,26 @@ class Segment : public Primitive {
   Coord a_point_;
   Coord b_point_;
 
-  float GetKCoefficient() const;
   int GetBCoefficient() const;
 };
+
+std::list<Segment> BaseExtractPrimitives(
+    std::vector<std::vector<bool>>& bitmap);
+
+template <typename Container, typename Translator>
+  requires ImageBitmap<Container> &&
+           AvailabilityTranslator<Container, Translator>
+std::list<Segment> ExtractPrimitives(const Container& container, int size_x,
+                                     int size_y, Translator translator) {
+  std::vector<std::vector<bool>> converted_bitmap(size_x,
+                                                  std::vector<bool>(size_y));
+  for (int x = 0; x < size_x; ++x) {
+    for (int y = 0; y < size_y; ++y) {
+      converted_bitmap[x][y] = static_cast<bool>(translator(container[x][y]));
+    }
+  }
+
+  return BaseExtractPrimitives(converted_bitmap);
+}
 
 }  // namespace PTIT
