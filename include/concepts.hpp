@@ -19,7 +19,7 @@ concept AvailabilityTranslator =
     requires(Container container, Checker checker) {
       ImageBitmap<Container>;
       UnifiedTranslator<Container, Checker>;
-      std::is_convertible_v<decltype(checker(container)), bool> == true;
+      static_cast<bool>(checker(container));
     };
 
 }  // namespace PTIT
