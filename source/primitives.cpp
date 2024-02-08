@@ -80,6 +80,9 @@ std::list<Coord> Segment::GetGraphic() const {
 }
 
 int Segment::GetBCoefficient() const {
+  if (b_point_.x - a_point_.x == 0) {
+    return 0;
+  }
   return ((static_cast<int64_t>(b_point_.x) * a_point_.y) -
           (static_cast<int64_t>(a_point_.x) * b_point_.y)) /
          (b_point_.x - a_point_.x);
@@ -175,7 +178,7 @@ std::list<Segment> BaseExtractPrimitives(
         Coord point = neighbours.front();
         neighbours.pop();
 
-        if (!bitmap[x][y]) {
+        if (!bitmap[point.x][point.y]) {
           continue;
         }
 
