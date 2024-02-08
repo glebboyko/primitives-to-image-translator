@@ -8,7 +8,7 @@
 #define MAXFLOAT std::numeric_limits<float>::max
 #endif
 
-namespace Primitives {
+namespace PTIT {
 
 Coord Coord::operator*(float coef) const {
   Coord ret = *this;
@@ -86,4 +86,4 @@ int Segment::GetBCoefficient() const {
          (b_point_.x - a_point_.x);
 }
 
-}  // namespace Primitives
+}  // namespace PTIT

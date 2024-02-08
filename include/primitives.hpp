@@ -1,7 +1,7 @@
 #pragma once
 #include <list>
 
-namespace Primitives {
+namespace PTIT {
 
 struct Coord {
   int x;
@@ -39,4 +39,4 @@ class Segment : public Primitive {
   int GetBCoefficient() const;
 };
 
-}  // namespace Primitives
+}  // namespace PTIT
