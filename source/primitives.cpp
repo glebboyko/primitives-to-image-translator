@@ -156,7 +156,7 @@ std::pair<float, float> GetKRange(const Segment& segment) {
 }
 
 std::list<Segment> BaseExtractPrimitives(
-    std::vector<std::vector<bool>>& bitmap) {
+    std::vector<std::vector<std::pair<bool, int64_t>>>& bitmap) {
   if (bitmap.empty() || bitmap[0].empty()) {
     return {};
   }
@@ -164,7 +164,8 @@ std::list<Segment> BaseExtractPrimitives(
 
   for (int x = 0; x < bitmap.size(); ++x) {
     for (int y = 0; y < bitmap[0].size(); ++y) {
-      if (!bitmap[x][y]) {
+      int64_t index = y * bitmap.size() + x;
+      if (!bitmap[x][y].first) {
         continue;
       }
 
@@ -178,7 +179,8 @@ std::list<Segment> BaseExtractPrimitives(
         Coord point = neighbours.front();
         neighbours.pop();
 
-        if (!bitmap[point.x][point.y]) {
+        if (!bitmap[point.x][point.y].first ||
+            bitmap[point.x][point.y].second == index) {
           continue;
         }
 
@@ -192,7 +194,7 @@ std::list<Segment> BaseExtractPrimitives(
 
         float segment_k = GetKCoefficient({new_segm.GetA(), new_segm.GetB()});
         if (IsKBelongToRange(segment_k, k_range)) {
-          bitmap[point.x][point.y] = false;
+          bitmap[point.x][point.y].second = index;
           for (const Coord& neighbour :
                GetNeighbours(point, bitmap.size(), bitmap[0].size())) {
             neighbours.push(neighbour);
@@ -202,6 +204,9 @@ std::list<Segment> BaseExtractPrimitives(
         }
       }
 
+      for (const auto& point : segment.GetGraphic()) {
+        bitmap[point.x][point.y].first = false;
+      }
       primitives.push_back(segment);
     }
   }
