@@ -1,17 +1,14 @@
 #pragma once
 
-#include <concepts>
 #include <fstream>
 
+#include "concepts.hpp"
 #include "primitives.hpp"
 
-template <typename Container, typename Translator>
-concept ImageCreatorReq = requires(Container container, Translator translator) {
-  translator(container[0][0]);
-};
+namespace PTIT {
 
 template <typename Container, typename Translator>
-  requires ImageCreatorReq<Container, Translator>
+  requires ImageBitmap<Container> && UnifiedTranslator<Container, Translator>
 void CreateImage(const char* image_file, const Container& image, ssize_t size_x,
                  ssize_t size_y, Translator translator) {
   std::ofstream img_file(image_file);
@@ -42,3 +39,5 @@ struct RGB {
 
   static const int kMaxColor = 255;
 };
+
+}  // namespace PTIT
