@@ -19,7 +19,7 @@ concept AvailabilityTranslator =
     requires(Container container, Checker checker) {
       ImageBitmap<Container>;
       UnifiedTranslator<Container, Checker>;
-      static_cast<bool>(checker(container));
+      static_cast<bool>(checker(container[0][0]));
     };
 
 }  // namespace PTIT
