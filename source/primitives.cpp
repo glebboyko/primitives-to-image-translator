@@ -4,7 +4,8 @@
 
 #include <cmath>
 #include <cstdint>
-#include <queue>
+#include <set>
+#include <vector>
 
 namespace PTIT {
 
@@ -88,129 +89,228 @@ int Segment::GetBCoefficient() const {
          (b_point_.x - a_point_.x);
 }
 
-std::list<Coord> GetNeighbours(Coord point, int x_size, int y_size) {
-  std::list<Coord> neighbours;
-  for (int x = point.x - 1; x <= point.x + 1; ++x) {
-    for (int y = point.y - 1; y <= point.y + 1; ++y) {
-      if (x < 0 || y < 0 || x >= x_size || y >= y_size) {
-        continue;
-      }
-      if (x == point.x && y == point.y) {
-        continue;
-      }
-      neighbours.push_back({x, y});
+bool IsPointInPole(const Coord& point, int size_x, int size_y) {
+  return point.x >= 0 && point.y >= 0 && point.x < size_x && point.y < size_y;
+}
+
+enum ConnectPattern { Vertical, Horizontal, DiagonalUp, DiagonalDown };
+
+Coord GetPatternNeighbour(const Coord& point, ConnectPattern pattern) {
+  switch (pattern) {
+    case Vertical:
+      return {point.x, point.y + 1};
+    case Horizontal:
+      return {point.x + 1, point.y};
+    case DiagonalUp:
+      return {point.x + 1, point.y + 1};
+    case DiagonalDown:
+      return {point.x + 1, point.y - 1};
+  }
+}
+
+struct PatBaseSegm {
+  BaseSegment base_segment;
+  bool connections[2] = {false, false};
+};
+
+std::vector<PatBaseSegm> GetBaseSegments(
+    std::vector<std::vector<ExtractPoint>>& bitmap, ConnectPattern pattern) {
+  for (auto& abscissa : bitmap) {
+    for (auto& [black, segm_ind] : abscissa) {
+      segm_ind = -1;
     }
   }
-  return neighbours;
-}
 
-const Coord& GetLeft(const Coord& a_point, const Coord& b_point) noexcept {
-  if (a_point.x == b_point.x) {
-    return a_point.y <= b_point.y ? a_point : b_point;
-  }
-  return a_point.x < b_point.x ? a_point : b_point;
-}
-const Coord& GetRight(const Coord& a_point, const Coord& b_point) noexcept {
-  return &GetLeft(a_point, b_point) == &a_point ? b_point : a_point;
-}
+  std::vector<PatBaseSegm> base_segments;
+  for (int x = 0; x < bitmap.size(); ++x) {
+    for (int y = 0; y < bitmap[0].size(); ++y) {
+      auto& [black, segm_ind] = bitmap[x][y];
 
-bool IsKBelongToRange(float k_coef, std::pair<float, float> k_range) noexcept {
-  if (k_coef == k_range.second && k_coef == FLT_MAX) {
-    return true;
-  }
-  return k_coef > k_range.first && k_coef < k_range.second;
-}
+      if (segm_ind == -1) {
+        segm_ind = base_segments.size();
+        base_segments.push_back({.base_segment = {{x, y}}});
+      }
 
-std::list<Segment> GetNeighbourSegments(const Segment& segment) {
-  std::list<Segment> neighbours;
-
-  // a-left
-  neighbours.push_back({{segment.GetA().x - 1, segment.GetA().y},
-                        {segment.GetB().x + 1, segment.GetB().y}});
-  // a-right
-  neighbours.push_back({{segment.GetA().x + 1, segment.GetA().y},
-                        {segment.GetB().x - 1, segment.GetB().y}});
-  // a-up
-  neighbours.push_back({{segment.GetA().x, segment.GetA().y + 1},
-                        {segment.GetB().x, segment.GetB().y - 1}});
-  // a-down
-  neighbours.push_back({{segment.GetA().x, segment.GetA().y - 1},
-                        {segment.GetB().x, segment.GetB().y + 1}});
-
-  return neighbours;
-}
-std::pair<float, float> GetKRange(const Segment& segment) {
-  if (segment.GetA() == segment.GetB()) {
-    return {-FLT_MAX, FLT_MAX};
+      auto neighbour = GetPatternNeighbour({x, y}, pattern);
+      if (!(IsPointInPole(neighbour, bitmap.size(), bitmap[0].size()) &&
+            bitmap[neighbour.x][neighbour.y].black)) {
+        continue;
+      }
+      base_segments[segm_ind].base_segment.push_back(neighbour);
+      bitmap[neighbour.x][neighbour.y].segm_ind = segm_ind;
+    }
   }
 
-  float k_min = GetKCoefficient(segment);
-  float k_max = k_min;
-  for (const auto& neighbour : GetNeighbourSegments(segment)) {
-    float neighbour_k = GetKCoefficient(neighbour);
-    k_min = std::min(k_min, neighbour_k);
-    k_max = std::max(k_max, neighbour_k);
+  return base_segments;
+}
+
+ConnectPattern GetAddPattern(int identifier,
+                             ConnectPattern base_pattern) noexcept {
+  if (base_pattern == Vertical || base_pattern == Horizontal) {
+    if (identifier == 0) {
+      return DiagonalDown;
+    }
+    return DiagonalUp;
+  }
+  return identifier == 0 ? Horizontal : Vertical;
+}
+
+Coord GetNeighbour(const BaseSegment& segment, ConnectPattern add_pattern,
+                   ConnectPattern base_pattern) {
+  switch (base_pattern) {
+    case Vertical:
+      if (add_pattern == DiagonalUp) {
+        return GetPatternNeighbour(segment.back(), add_pattern);
+      }
+      return GetPatternNeighbour(segment.front(), add_pattern);
+
+    case Horizontal:
+      return GetPatternNeighbour(segment.back(), add_pattern);
+
+    case DiagonalUp:
+      return GetPatternNeighbour(segment.back(), add_pattern);
+
+    case DiagonalDown:
+      if (add_pattern == Vertical) {
+        return GetPatternNeighbour(segment.front(), add_pattern);
+      }
+      return GetPatternNeighbour(segment.back(), add_pattern);
+  }
+}
+
+std::list<int> Unite(int base_segm_ind, ConnectPattern add_pattern,
+                     ConnectPattern base_pattern,
+                     const std::vector<PatBaseSegm>& bases,
+                     const std::vector<std::vector<ExtractPoint>>& bitmap) {
+  std::list<int> united;
+  united.push_back(base_segm_ind);
+  int base_size = bases[base_segm_ind].base_segment.size();
+  if (base_size == 1) {
+    return united;
+  }
+  int add_size = 0;
+
+  while (true) {
+    int last_segm_ind = united.back();
+
+    auto neigh_coord = GetNeighbour(bases[last_segm_ind].base_segment,
+                                    add_pattern, base_pattern);
+    if (!IsPointInPole(neigh_coord, bitmap.size(), bitmap[0].size())) {
+      break;
+    }
+    const auto& neigh_point = bitmap[neigh_coord.x][neigh_coord.y];
+    if (neigh_point.segm_ind < 0) {
+      break;
+    }
+
+    const auto& base_neigh = bases[neigh_point.segm_ind];
+    int neigh_size = base_neigh.base_segment.size();
+
+    if (neigh_size == base_size) {
+      united.push_back(neigh_point.segm_ind);
+      continue;
+    }
+    if (add_size == 0 && united.size() <= 2) {
+      add_size = base_size;
+      base_size = neigh_size;
+      united.push_back(neigh_point.segm_ind);
+      continue;
+    }
+    if (add_size == 0) {
+      united.push_back(neigh_point.segm_ind);
+      break;
+    }
+    break;
   }
 
-  return {k_min, k_max};
+  return united;
+}
+
+std::list<BaseSegment> GetPatternedSegments(
+    std::vector<std::vector<ExtractPoint>>& bitmap, ConnectPattern pattern) {
+  auto bases = GetBaseSegments(bitmap, pattern);
+
+  std::list<BaseSegment> united;
+
+  for (int index = 0; index < bases.size(); ++index) {
+    for (int i = 0; i <= 1; ++i) {
+      auto add_pattern = GetAddPattern(i, pattern);
+      auto united_segm = Unite(index, add_pattern, pattern, bases, bitmap);
+      for (auto iter = united_segm.begin();
+           iter != std::prev(united_segm.end()); ++iter) {
+        bases[*iter].connections[i] = true;
+      }
+      BaseSegment united_segm_points;
+      for (int united_segm_part_ind : united_segm) {
+        for (const auto& point : bases[united_segm_part_ind].base_segment) {
+          united_segm_points.push_back(point);
+        }
+      }
+      if (united_segm.size() >= 3 &&
+          bases[*united_segm.begin()].base_segment.size() !=
+              bases[*std::next(united_segm.begin())].base_segment.size()) {
+        united_segm_points.reverse();
+      }
+      united.push_back(std::move(united_segm_points));
+    }
+  }
+
+  return united;
+}
+
+bool AreNeighbours(const Coord& first, const Coord& second) noexcept {
+  return abs(first.x - second.x) <= 1 && abs(first.y - second.y) <= 1;
 }
 
 std::list<Segment> BaseExtractPrimitives(
-    std::vector<std::vector<std::pair<bool, int64_t>>>& bitmap) {
-  if (bitmap.empty() || bitmap[0].empty()) {
-    return {};
-  }
-  std::list<Segment> primitives;
+    std::vector<std::vector<ExtractPoint>>& bitmap) {
+  auto set_compare = [](const BaseSegment& first, const BaseSegment& second) {
+    return first.size() > second.size();
+  };
+  std::set<BaseSegment, decltype(set_compare)> base_segments(set_compare);
 
-  for (int x = 0; x < bitmap.size(); ++x) {
-    for (int y = 0; y < bitmap[0].size(); ++y) {
-      int64_t index = y * bitmap.size() + x;
-      if (!bitmap[x][y].first) {
-        continue;
-      }
-
-      Segment segment({x, y}, {x, y});
-      std::queue<Coord> neighbours;
-      std::pair<float, float> k_range = {-FLT_MAX, FLT_MAX};
-
-      neighbours.push(segment.GetA());
-
-      while (!neighbours.empty()) {
-        Coord point = neighbours.front();
-        neighbours.pop();
-
-        if (!bitmap[point.x][point.y].first ||
-            bitmap[point.x][point.y].second == index) {
-          continue;
-        }
-
-        const Coord& base_point = GetDistance(point, segment.GetA()) >
-                                          GetDistance(point, segment.GetB())
-                                      ? segment.GetA()
-                                      : segment.GetB();
-
-        Segment new_segm(GetLeft(point, base_point),
-                         GetRight(point, base_point));
-
-        float segment_k = GetKCoefficient({new_segm.GetA(), new_segm.GetB()});
-        if (IsKBelongToRange(segment_k, k_range)) {
-          bitmap[point.x][point.y].second = index;
-          for (const Coord& neighbour :
-               GetNeighbours(point, bitmap.size(), bitmap[0].size())) {
-            neighbours.push(neighbour);
-          }
-          segment = new_segm;
-          k_range = GetKRange(segment);
-        }
-      }
-
-      for (const auto& point : segment.GetGraphic()) {
-        bitmap[point.x][point.y].first = false;
-      }
-      primitives.push_back(segment);
+  for (int i = 0; i < 4; ++i) {
+    for (auto&& segment :
+         GetPatternedSegments(bitmap, static_cast<ConnectPattern>(i))) {
+      base_segments.insert(std::move(segment));
     }
   }
-  return primitives;
+
+  std::list<Segment> segments;
+
+  for (auto iter = base_segments.begin(); iter != base_segments.end();) {
+    BaseSegment proc_segm;
+    for (const auto& coord : *iter) {
+      auto& point = bitmap[coord.x][coord.y];
+      if (point.black) {
+        proc_segm.push_back(coord);
+      }
+    }
+
+    auto begin_iter = proc_segm.begin();
+    for (auto last_iter = proc_segm.begin(); last_iter != proc_segm.end();
+         ++last_iter) {
+      if (!AreNeighbours(*begin_iter, *last_iter)) {
+        BaseSegment split;
+        proc_segm.splice(split.end(), split, begin_iter, last_iter);
+        base_segments.insert(std::move(split));
+        begin_iter = last_iter;
+      }
+    }
+    if (begin_iter != proc_segm.begin()) {
+      iter = base_segments.erase(iter);
+      break;
+    }
+
+    for (const auto& coord : *iter) {
+      bitmap[coord.x][coord.y].black = false;
+    }
+
+    segments.push_back({iter->front(), iter->back()});
+    ++iter;
+  }
+
+  return segments;
 }
 
 }  // namespace PTIT

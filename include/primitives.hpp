@@ -1,6 +1,7 @@
 #pragma once
 
 #include <list>
+#include <optional>
 
 #include "concepts.hpp"
 
@@ -41,20 +42,29 @@ class Segment : public Primitive {
   int GetBCoefficient() const;
 };
 
+using BaseSegment = std::list<Coord>;
+
+struct ExtractPoint {
+  bool black = false;
+  int segm_ind = -1;
+};
+
 std::list<Segment> BaseExtractPrimitives(
-    std::vector<std::vector<std::pair<bool, int64_t>>>& bitmap);
+    std::vector<std::vector<ExtractPoint>>& bitmap);
 
 template <typename Container, typename Translator>
   requires ImageBitmap<Container> &&
            AvailabilityTranslator<Container, Translator>
 std::list<Segment> ExtractPrimitives(const Container& container, int size_x,
                                      int size_y, Translator translator) {
-  std::vector<std::vector<std::pair<bool, int64_t>>> converted_bitmap(
-      size_x, std::vector<std::pair<bool, int64_t>>(size_y));
+  if (size_x == 0 || size_y == 0) {
+    return {};
+  }
+  std::vector<std::vector<ExtractPoint>> converted_bitmap(
+      size_x, std::vector<ExtractPoint>(size_y));
   for (int x = 0; x < size_x; ++x) {
     for (int y = 0; y < size_y; ++y) {
-      converted_bitmap[x][y] = {static_cast<bool>(translator(container[x][y])),
-                                INT64_MAX};
+      converted_bitmap[x][y] = {.black = translator(container[x][y])};
     }
   }
 
