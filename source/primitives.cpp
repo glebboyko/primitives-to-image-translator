@@ -126,6 +126,10 @@ std::vector<PatBaseSegm> GetBaseSegments(
     for (int y = 0; y < bitmap[0].size(); ++y) {
       auto& [black, segm_ind] = bitmap[x][y];
 
+      if (!black) {
+        continue;
+      }
+
       if (segm_ind == -1) {
         segm_ind = base_segments.size();
         base_segments.push_back({.base_segment = {{x, y}}});
@@ -267,7 +271,7 @@ std::list<Segment> BaseExtractPrimitives(
   auto set_compare = [](const BaseSegment& first, const BaseSegment& second) {
     return first.size() > second.size();
   };
-  std::set<BaseSegment, decltype(set_compare)> base_segments(set_compare);
+  std::multiset<BaseSegment, decltype(set_compare)> base_segments(set_compare);
 
   for (int i = 0; i < 4; ++i) {
     for (auto&& segment :
@@ -279,30 +283,34 @@ std::list<Segment> BaseExtractPrimitives(
   std::list<Segment> segments;
 
   for (auto iter = base_segments.begin(); iter != base_segments.end();) {
-    BaseSegment proc_segm;
+    std::list<BaseSegment> proc_segm_list;
     for (const auto& coord : *iter) {
-      auto& point = bitmap[coord.x][coord.y];
-      if (point.black) {
-        proc_segm.push_back(coord);
+      if (!bitmap[coord.x][coord.y].black) {
+        continue;
+      }
+
+      if (!proc_segm_list.empty() &&
+          AreNeighbours(proc_segm_list.back().back(), coord)) {
+        proc_segm_list.back().push_back(coord);
+      } else {
+        proc_segm_list.push_back({coord});
       }
     }
 
-    auto begin_iter = proc_segm.begin();
-    for (auto last_iter = proc_segm.begin(); last_iter != proc_segm.end();
-         ++last_iter) {
-      if (!AreNeighbours(*begin_iter, *last_iter)) {
-        BaseSegment split;
-        proc_segm.splice(split.end(), split, begin_iter, last_iter);
-        base_segments.insert(std::move(split));
-        begin_iter = last_iter;
-      }
-    }
-    if (begin_iter != proc_segm.begin()) {
+    if (proc_segm_list.empty()) {
       iter = base_segments.erase(iter);
-      break;
+      continue;
+    }
+    if (proc_segm_list.size() > 1) {
+      iter = base_segments.erase(iter);
+
+      for (auto&& proc_segm : proc_segm_list) {
+        base_segments.insert(std::move(proc_segm));
+      }
+      continue;
     }
 
-    for (const auto& coord : *iter) {
+    for (const auto& coord : proc_segm_list.back()) {
       bitmap[coord.x][coord.y].black = false;
     }
 
