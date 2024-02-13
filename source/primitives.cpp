@@ -237,6 +237,10 @@ std::list<int> Unite(int base_segm_ind, ConnectPattern add_pattern,
   return united;
 }
 
+bool IsSegmnetCorrect(const BaseSegment& segment) {
+  return segment == Segment(segment.front(), segment.back()).GetGraphic();
+}
+
 std::list<BaseSegment> GetPatternedSegments(
     std::vector<std::vector<ExtractPoint>>& bitmap, ConnectPattern pattern) {
   auto bases = GetBaseSegments(bitmap, pattern);
@@ -247,15 +251,19 @@ std::list<BaseSegment> GetPatternedSegments(
     for (int i = 0; i <= 1; ++i) {
       auto add_pattern = GetAddPattern(i, pattern);
       auto united_segm = Unite(index, add_pattern, pattern, bases, bitmap);
-      for (auto iter = united_segm.begin();
-           iter != std::prev(united_segm.end()); ++iter) {
-        bases[*iter].connections[i] = true;
-      }
       BaseSegment united_segm_points;
       for (int united_segm_part_ind : united_segm) {
         for (const auto& point : bases[united_segm_part_ind].base_segment) {
           united_segm_points.push_back(point);
         }
+      }
+      if (!IsSegmnetCorrect(united_segm_points)) {
+        continue;
+      }
+
+      for (auto iter = united_segm.begin();
+           iter != std::prev(united_segm.end()); ++iter) {
+        bases[*iter].connections[i] = true;
       }
       united.push_back(std::move(united_segm_points));
     }
