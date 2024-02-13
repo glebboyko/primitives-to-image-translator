@@ -190,7 +190,7 @@ std::list<int> Unite(int base_segm_ind, ConnectPattern add_pattern,
   united.push_back(base_segm_ind);
   int base_size = bases[base_segm_ind].base_segment.size();
   if (base_size == 1) {
-    return united;
+    return {};
   }
   int add_size = base_size;
 
@@ -234,24 +234,43 @@ std::list<int> Unite(int base_segm_ind, ConnectPattern add_pattern,
     break;
   }
 
+  if (united.size() == 1) {
+    return {};
+  }
   return united;
+}
+
+bool IsSegmnetCorrect(const BaseSegment& segment) {
+  return segment == Segment(segment.front(), segment.back()).GetGraphic();
 }
 
 std::list<BaseSegment> GetPatternedSegments(
     std::vector<std::vector<ExtractPoint>>& bitmap, ConnectPattern pattern) {
-  auto bases = GetBaseSegments(bitmap, pattern);
-
   std::list<BaseSegment> united;
+  auto bases = GetBaseSegments(bitmap, pattern);
+  for (const auto& base : bases) {
+    united.push_back(base.base_segment);
+  }
 
   for (int index = 0; index < bases.size(); ++index) {
     for (int i = 0; i <= 1; ++i) {
+      if (bases[index].connections[i]) {
+        continue;
+      }
       auto add_pattern = GetAddPattern(i, pattern);
       auto united_segm = Unite(index, add_pattern, pattern, bases, bitmap);
+      if (united_segm.empty()) {
+        continue;
+      }
       BaseSegment united_segm_points;
       for (int united_segm_part_ind : united_segm) {
         for (const auto& point : bases[united_segm_part_ind].base_segment) {
           united_segm_points.push_back(point);
         }
+      }
+
+      if (!IsSegmnetCorrect(united_segm_points)) {
+        continue;
       }
 
       for (auto iter = united_segm.begin();
@@ -267,10 +286,6 @@ std::list<BaseSegment> GetPatternedSegments(
 
 bool AreNeighbours(const Coord& first, const Coord& second) noexcept {
   return abs(first.x - second.x) <= 1 && abs(first.y - second.y) <= 1;
-}
-
-bool IsSegmnetCorrect(const BaseSegment& segment) {
-  return segment == Segment(segment.front(), segment.back()).GetGraphic();
 }
 
 std::list<Segment> BaseExtractPrimitives(
