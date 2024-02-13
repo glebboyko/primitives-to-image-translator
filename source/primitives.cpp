@@ -237,10 +237,6 @@ std::list<int> Unite(int base_segm_ind, ConnectPattern add_pattern,
   return united;
 }
 
-bool IsSegmnetCorrect(const BaseSegment& segment) {
-  return segment == Segment(segment.front(), segment.back()).GetGraphic();
-}
-
 std::list<BaseSegment> GetPatternedSegments(
     std::vector<std::vector<ExtractPoint>>& bitmap, ConnectPattern pattern) {
   auto bases = GetBaseSegments(bitmap, pattern);
@@ -257,9 +253,6 @@ std::list<BaseSegment> GetPatternedSegments(
           united_segm_points.push_back(point);
         }
       }
-      if (!IsSegmnetCorrect(united_segm_points)) {
-        continue;
-      }
 
       for (auto iter = united_segm.begin();
            iter != std::prev(united_segm.end()); ++iter) {
@@ -274,6 +267,10 @@ std::list<BaseSegment> GetPatternedSegments(
 
 bool AreNeighbours(const Coord& first, const Coord& second) noexcept {
   return abs(first.x - second.x) <= 1 && abs(first.y - second.y) <= 1;
+}
+
+bool IsSegmnetCorrect(const BaseSegment& segment) {
+  return segment == Segment(segment.front(), segment.back()).GetGraphic();
 }
 
 std::list<Segment> BaseExtractPrimitives(
@@ -293,7 +290,7 @@ std::list<Segment> BaseExtractPrimitives(
 
   std::list<Segment> segments;
 
-  for (auto iter = base_segments.begin(); iter != base_segments.end();) {
+  for (auto iter = base_segments.begin(); iter != base_segments.end(); ++iter) {
     std::list<BaseSegment> proc_segm_list;
     for (const auto& coord : *iter) {
       if (!bitmap[coord.x][coord.y].black) {
@@ -309,16 +306,17 @@ std::list<Segment> BaseExtractPrimitives(
     }
 
     if (proc_segm_list.empty()) {
-      iter = base_segments.erase(iter);
       continue;
     }
     if (proc_segm_list.size() > 1 ||
         proc_segm_list.front().size() != iter->size()) {
-      iter = base_segments.erase(iter);
-
       for (auto&& proc_segm : proc_segm_list) {
         base_segments.insert(std::move(proc_segm));
       }
+      continue;
+    }
+
+    if (!IsSegmnetCorrect(proc_segm_list.back())) {
       continue;
     }
 
@@ -327,7 +325,6 @@ std::list<Segment> BaseExtractPrimitives(
     }
     segments.push_back(
         {proc_segm_list.back().front(), proc_segm_list.back().back()});
-    ++iter;
   }
 
   return segments;
