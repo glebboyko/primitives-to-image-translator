@@ -192,7 +192,7 @@ std::list<int> Unite(int base_segm_ind, ConnectPattern add_pattern,
   if (base_size == 1) {
     return united;
   }
-  int add_size = 0;
+  int add_size = base_size;
 
   while (true) {
     int last_segm_ind = united.back();
@@ -210,21 +210,24 @@ std::list<int> Unite(int base_segm_ind, ConnectPattern add_pattern,
     const auto& base_neigh = bases[neigh_point.segm_ind];
     int neigh_size = base_neigh.base_segment.size();
 
-    if (base_neigh.base_segment.front() != neigh_coord) {
+    if (base_neigh.base_segment.front() != neigh_coord ||
+        neigh_size > base_size) {
       break;
     }
 
-    if (neigh_size == base_size) {
+    if (neigh_size == add_size) {
+      if (add_size == 1) {
+        break;
+      }
       united.push_back(neigh_point.segm_ind);
       continue;
     }
-    if (add_size == 0 && united.size() <= 2) {
-      add_size = base_size;
-      base_size = neigh_size;
+    if (united.size() == 1) {
+      add_size = neigh_size;
       united.push_back(neigh_point.segm_ind);
       continue;
     }
-    if (add_size == 0) {
+    if (base_size == add_size) {
       united.push_back(neigh_point.segm_ind);
       break;
     }
@@ -253,11 +256,6 @@ std::list<BaseSegment> GetPatternedSegments(
         for (const auto& point : bases[united_segm_part_ind].base_segment) {
           united_segm_points.push_back(point);
         }
-      }
-      if (united_segm.size() >= 2 &&
-          bases[*united_segm.begin()].base_segment.size() <
-              bases[*std::next(united_segm.begin())].base_segment.size()) {
-        united_segm_points.reverse();
       }
       united.push_back(std::move(united_segm_points));
     }
