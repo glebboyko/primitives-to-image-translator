@@ -210,6 +210,10 @@ std::list<int> Unite(int base_segm_ind, ConnectPattern add_pattern,
     const auto& base_neigh = bases[neigh_point.segm_ind];
     int neigh_size = base_neigh.base_segment.size();
 
+    if (base_neigh.base_segment.front() != neigh_coord) {
+      break;
+    }
+
     if (neigh_size == base_size) {
       united.push_back(neigh_point.segm_ind);
       continue;
@@ -250,8 +254,8 @@ std::list<BaseSegment> GetPatternedSegments(
           united_segm_points.push_back(point);
         }
       }
-      if (united_segm.size() >= 3 &&
-          bases[*united_segm.begin()].base_segment.size() !=
+      if (united_segm.size() >= 2 &&
+          bases[*united_segm.begin()].base_segment.size() <
               bases[*std::next(united_segm.begin())].base_segment.size()) {
         united_segm_points.reverse();
       }
@@ -269,7 +273,8 @@ bool AreNeighbours(const Coord& first, const Coord& second) noexcept {
 std::list<Segment> BaseExtractPrimitives(
     std::vector<std::vector<ExtractPoint>>& bitmap) {
   auto set_compare = [](const BaseSegment& first, const BaseSegment& second) {
-    return first.size() > second.size();
+    return GetDistance(first.back(), first.front()) >
+           GetDistance(second.back(), second.front());
   };
   std::multiset<BaseSegment, decltype(set_compare)> base_segments(set_compare);
 
@@ -301,7 +306,8 @@ std::list<Segment> BaseExtractPrimitives(
       iter = base_segments.erase(iter);
       continue;
     }
-    if (proc_segm_list.size() > 1) {
+    if (proc_segm_list.size() > 1 ||
+        proc_segm_list.front().size() != iter->size()) {
       iter = base_segments.erase(iter);
 
       for (auto&& proc_segm : proc_segm_list) {
@@ -313,8 +319,8 @@ std::list<Segment> BaseExtractPrimitives(
     for (const auto& coord : proc_segm_list.back()) {
       bitmap[coord.x][coord.y].black = false;
     }
-
-    segments.push_back({iter->front(), iter->back()});
+    segments.push_back(
+        {proc_segm_list.back().front(), proc_segm_list.back().back()});
     ++iter;
   }
 
