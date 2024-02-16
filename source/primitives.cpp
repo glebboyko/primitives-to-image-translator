@@ -2,6 +2,7 @@
 
 #include <float.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <set>
@@ -87,6 +88,32 @@ int Segment::GetBCoefficient() const {
   return ((static_cast<int64_t>(b_point_.x) * a_point_.y) -
           (static_cast<int64_t>(a_point_.x) * b_point_.y)) /
          (b_point_.x - a_point_.x);
+}
+
+std::list<Coord> FulfillArea(const std::list<Coord>& border) {
+  std::vector<Coord> sorted_border;
+  sorted_border.reserve(border.size());
+  sorted_border.assign(border.begin(), border.end());
+
+  std::sort(sorted_border.begin(), sorted_border.end(),
+            [](const Coord& first, const Coord& second) {
+              return first.y == second.y ? first.x < second.x
+                                         : first.y < second.y;
+            });
+
+  std::list<Coord> area;
+  area.assign(sorted_border.begin(), sorted_border.end());
+
+  for (auto iter = std::next(area.begin()); iter != area.end(); ++iter) {
+    if (std::prev(iter)->y != iter->y) {
+      continue;
+    }
+    while (std::prev(iter)->x < iter->x - 1) {
+      area.insert(iter, {std::prev(iter)->x + 1, iter->y});
+    }
+  }
+
+  return area;
 }
 
 bool IsPointInPole(const Coord& point, int size_x, int size_y) {

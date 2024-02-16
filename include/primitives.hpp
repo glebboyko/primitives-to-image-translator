@@ -42,6 +42,8 @@ class Segment : public Primitive {
   int GetBCoefficient() const;
 };
 
+std::list<Coord> FulfillArea(const std::list<Coord>& border);
+
 using BaseSegment = std::list<Coord>;
 
 struct ExtractPoint {
