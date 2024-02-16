@@ -40,6 +40,4 @@ struct RGB {
   static const int kMaxColor = 255;
 };
 
-bool operator==(const RGB&, const RGB&) noexcept;
-
 }  // namespace PTIT
