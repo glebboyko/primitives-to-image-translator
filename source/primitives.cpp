@@ -267,69 +267,122 @@ KRange GetKRange(const Segment& segment) {
   return KRange(min_angle, max_angle);
 }
 
-std::pair<BaseSegment, std::list<BaseSegment>> ExtractRecurse(
-    std::vector<std::vector<bool>>& bitmap, const Coord& curr_point,
-    KRange k_range, Deviation deviation, Movement restr_move,
-    Coord init_point) {
+struct RecurseRet {
+  std::list<BaseSegment> cont;
+  std::list<BaseSegment> other;
+};
+struct InputData {
+  Coord curr_point;
+  KRange k_range;
+  Deviation deviation = {Neutral, Neutral};
+  Movement restr_move = None;
+  Coord init_point = {0, 0};
+
+  RecurseRet* parent_ret;
+};
+
+struct GlobalVars {
   bool is_cont = false;
+  bool process_ret = false;
+};
 
-  auto init_k = GetKCoefficient({init_point, curr_point});
-  if (k_range.InRange(init_k)) {
-    k_range = GetKRange({init_point, curr_point});
-    is_cont = true;
-  } else {
-    init_point = curr_point;
-    k_range = KRange();
-    deviation = {Neutral, Neutral};
-    restr_move = None;
-  }
+struct StackData {
+  InputData input;
+  RecurseRet my_ret;
+  GlobalVars global_vars;
+};
 
-  bitmap[curr_point.x][curr_point.y] = false;
+std::list<BaseSegment> BaseSegmentsGetter(
+    std::vector<std::vector<bool>>& bitmap, const Coord& in_curr_point) {
+  RecurseRet recurse_ret;
 
-  BaseSegment max_cont;
-  double max_cont_len = -1;
-  std::list<BaseSegment> other_segments;
-  for (auto neighbour :
-       GetNeighbours(curr_point, bitmap.size(), bitmap[0].size())) {
-    if (!bitmap[neighbour.x][neighbour.y]) {
-      continue;
-    }
-    if (!CanBeConnected(curr_point, neighbour, deviation, restr_move)) {
-      continue;
-    }
+  std::stack<StackData> stack;
+  stack.push({.input = {.curr_point = in_curr_point,
+                        .k_range = KRange(true),
+                        .parent_ret = &recurse_ret}});
 
-    auto local_dev = deviation;
-    auto local_rest_move = restr_move;
-    UpdateConnection(local_dev, local_rest_move, curr_point, neighbour);
+  while (!stack.empty()) {
+    auto& input = stack.top().input;
+    auto& ret_cont = stack.top().my_ret;
+    auto& vars = stack.top().global_vars;
 
-    auto [cont, tmp_other_segments] = ExtractRecurse(
-        bitmap, neighbour, k_range, local_dev, local_rest_move, init_point);
-
-    double cont_len =
-        cont.empty() ? -1 : GetDistance(cont.front(), cont.back());
-    if (cont_len > max_cont_len) {
-      if (!max_cont.empty()) {
-        other_segments.push_back(std::move(max_cont));
+    if (!vars.process_ret) {
+      auto init_k = GetKCoefficient({input.init_point, input.curr_point});
+      if (input.k_range.InRange(init_k)) {
+        input.k_range = GetKRange({input.init_point, input.curr_point});
+        vars.is_cont = true;
+      } else {
+        input.init_point = input.curr_point;
+        input.k_range = KRange();
+        input.deviation = {Neutral, Neutral};
+        input.restr_move = None;
       }
-      max_cont = std::move(cont);
-      max_cont_len = GetDistance(max_cont.front(), max_cont.back());
+
+      bitmap[input.curr_point.x][input.curr_point.y] = false;
+
+      for (auto neighbour :
+           GetNeighbours(input.curr_point, bitmap.size(), bitmap[0].size())) {
+        if (!bitmap[neighbour.x][neighbour.y] ||
+            !CanBeConnected(input.curr_point, neighbour, input.deviation,
+                            input.restr_move)) {
+          continue;
+        }
+
+        StackData local_data;
+        local_data.input = {.curr_point = neighbour,
+                            .k_range = input.k_range,
+                            .init_point = input.init_point,
+                            .parent_ret = &ret_cont};
+        local_data.input.deviation = input.deviation;
+        local_data.input.restr_move = input.restr_move;
+        UpdateConnection(local_data.input.deviation,
+                         local_data.input.restr_move, input.curr_point,
+                         neighbour);
+        stack.push(local_data);
+      }
+
+      vars.process_ret = true;
     } else {
-      if (!cont.empty()) {
-        other_segments.push_back(std::move(cont));
+      double cont_len = -1;
+      auto cont_iter = ret_cont.cont.begin();
+
+      for (auto iter = ret_cont.cont.begin(); iter != ret_cont.cont.end();
+           ++iter) {
+        auto segm_len =
+            iter->empty() ? -1 : GetDistance(iter->front(), iter->back());
+        if (segm_len > cont_len) {
+          cont_len = segm_len;
+          cont_iter = iter;
+        }
       }
-    }
-    for (auto&& segm : tmp_other_segments) {
-      other_segments.push_back(std::move(segm));
+      if (cont_len > -1) {
+        auto cont = std::move(*cont_iter);
+        ret_cont.cont.erase(cont_iter);
+        cont.push_front(input.curr_point);
+        if (vars.is_cont) {
+          input.parent_ret->cont.push_back(std::move(cont));
+        } else {
+          input.parent_ret->other.push_back(std::move(cont));
+        }
+      } else {
+        if (vars.is_cont) {
+          input.parent_ret->cont.push_back({input.curr_point});
+        } else {
+          input.parent_ret->other.push_back({input.curr_point});
+        }
+      }
+
+      for (auto&& cont : ret_cont.cont) {
+        input.parent_ret->other.push_back(std::move(cont));
+      }
+      for (auto&& cont : ret_cont.other) {
+        input.parent_ret->other.push_back(std::move(cont));
+      }
+      stack.pop();
     }
   }
-  max_cont.push_front(curr_point);
 
-  if (is_cont) {
-    return {max_cont, other_segments};
-  }
-
-  other_segments.push_back(std::move(max_cont));
-  return {{}, other_segments};
+  return recurse_ret.other;
 }
 
 struct BSCont {
@@ -465,9 +518,7 @@ std::list<Segment> BaseExtractPrimitives(
         continue;
       }
 
-      auto base_segments = ExtractRecurse(bitmap, {x, y}, KRange(true),
-                                          {Neutral, Neutral}, None, {x, y})
-                               .second;
+      auto base_segments = BaseSegmentsGetter(bitmap, {x, y});
 
       for (auto&& base : base_segments) {
         raw_segments.push_back({std::move(base), {Neutral, Neutral}, None});
