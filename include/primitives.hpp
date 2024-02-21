@@ -20,12 +20,6 @@ bool operator<=(const Coord& first, const Coord& second) noexcept;
 bool operator>(const Coord& first, const Coord& second) noexcept;
 bool operator>=(const Coord& first, const Coord& second) noexcept;
 
-const double kPi = 3.1415926535;
-const int kDegInCircle = 360;
-
-double DegToRad(double deg);
-double RadToDeg(double rad);
-
 double GetDistance(const Coord& first, const Coord& second) noexcept;
 
 class Primitive {
