@@ -48,13 +48,6 @@ class Segment : public Primitive {
 
 std::list<Coord> FulfillArea(const std::list<Coord>& border);
 
-using BaseSegment = std::list<Coord>;
-
-struct ExtractPoint {
-  bool black = false;
-  int segm_ind = -1;
-};
-
 std::list<Segment> BaseExtractPrimitives(
     std::vector<std::vector<bool>>& bitmap);
 
