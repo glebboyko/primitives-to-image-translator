@@ -1,7 +1,6 @@
 #pragma once
 
 #include <list>
-#include <optional>
 
 #include "concepts.hpp"
 
@@ -15,6 +14,11 @@ struct Coord {
 };
 
 bool operator==(const Coord&, const Coord&) noexcept;
+bool operator!=(const Coord& first, const Coord& second) noexcept;
+bool operator<(const Coord& first, const Coord& second) noexcept;
+bool operator<=(const Coord& first, const Coord& second) noexcept;
+bool operator>(const Coord& first, const Coord& second) noexcept;
+bool operator>=(const Coord& first, const Coord& second) noexcept;
 
 double GetDistance(const Coord& first, const Coord& second) noexcept;
 
@@ -52,21 +56,18 @@ struct ExtractPoint {
 };
 
 std::list<Segment> BaseExtractPrimitives(
-    std::vector<std::vector<ExtractPoint>>& bitmap);
+    std::vector<std::vector<bool>>& bitmap);
 
 template <typename Container, typename Translator>
   requires ImageBitmap<Container> &&
            AvailabilityTranslator<Container, Translator>
 std::list<Segment> ExtractPrimitives(const Container& container, int size_x,
                                      int size_y, Translator translator) {
-  if (size_x == 0 || size_y == 0) {
-    return {};
-  }
-  std::vector<std::vector<ExtractPoint>> converted_bitmap(
-      size_x, std::vector<ExtractPoint>(size_y));
+  std::vector<std::vector<bool>> converted_bitmap(size_x,
+                                                  std::vector<bool>(size_y));
   for (int x = 0; x < size_x; ++x) {
     for (int y = 0; y < size_y; ++y) {
-      converted_bitmap[x][y] = {.black = translator(container[x][y])};
+      converted_bitmap[x][y] = static_cast<bool>(translator(container[x][y]));
     }
   }
 
