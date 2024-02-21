@@ -36,14 +36,21 @@ class Segment : public Primitive {
   Coord& GetB();
   const Coord& GetA() const;
   const Coord& GetB() const;
+  double GetAngle() const;
+
+  void SetLen(int len);
+  void SetAngle(double deg);
 
   std::list<Coord> GetGraphic() const override;
+  std::list<Coord> GetArea(int radius) const;
 
  private:
   Coord a_point_;
   Coord b_point_;
 
   int GetBCoefficient() const;
+  Coord GetCenter() const;
+  void SetKCoef(double new_k);
 };
 
 class Circe : public Primitive {
