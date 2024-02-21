@@ -46,6 +46,23 @@ class Segment : public Primitive {
   int GetBCoefficient() const;
 };
 
+class Circe : public Primitive {
+ public:
+  Circe() = default;
+  Circe(const Coord& center, double radius);
+
+  Coord& GetCenter();
+  const Coord& GetCenter() const;
+  int& GetRadius();
+  int GetRadius() const;
+
+  std::list<Coord> GetGraphic() const override;
+
+ private:
+  Coord center_;
+  int radius_;
+};
+
 std::list<Coord> FulfillArea(const std::list<Coord>& border);
 
 std::list<Segment> BaseExtractPrimitives(

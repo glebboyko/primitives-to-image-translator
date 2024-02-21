@@ -10,6 +10,7 @@
 
 namespace PTIT {
 
+/*-------------------------------- coordinate --------------------------------*/
 Coord Coord::operator*(float coef) const {
   Coord ret = *this;
   ret.x *= coef;
@@ -39,13 +40,7 @@ bool operator>=(const Coord& first, const Coord& second) noexcept {
   return !(first < second);
 }
 
-double GetDistance(const Coord& first, const Coord& second) noexcept {
-  double dx = second.x - first.x;
-  double dy = second.y - first.y;
-
-  return sqrt((dx * dx) + (dy * dy));
-}
-
+/*--------------------------------- segment ----------------------------------*/
 Segment::Segment(const Coord& a_point, const Coord& b_point)
     : a_point_(a_point), b_point_(b_point) {}
 
@@ -96,6 +91,38 @@ int Segment::GetBCoefficient() const {
   return ((static_cast<int64_t>(b_point_.x) * a_point_.y) -
           (static_cast<int64_t>(a_point_.x) * b_point_.y)) /
          (b_point_.x - a_point_.x);
+}
+
+/*---------------------------------- circle ----------------------------------*/
+Circe::Circe(const PTIT::Coord& center, double radius)
+    : center_(center), radius_(radius) {}
+
+Coord& Circe::GetCenter() { return center_; }
+const Coord& Circe::GetCenter() const { return center_; }
+int& Circe::GetRadius() { return radius_; }
+int Circe::GetRadius() const { return radius_; }
+
+std::list<Coord> Circe::GetGraphic() const {
+  std::list<Coord> graphic;
+
+  int64_t sqr_radius = radius_ * radius_;
+  for (int x = center_.x - radius_; x <= center_.x + radius_; ++x) {
+    int64_t sqr_x = x * x;
+    int y_top = sqrt(sqr_radius - sqr_x);
+
+    graphic.push_front({x, y_top});
+    graphic.push_back({x, -y_top});
+  }
+
+  return graphic;
+}
+
+/*------------------------------ free functions ------------------------------*/
+double GetDistance(const Coord& first, const Coord& second) noexcept {
+  double dx = second.x - first.x;
+  double dy = second.y - first.y;
+
+  return sqrt((dx * dx) + (dy * dy));
 }
 
 std::list<Coord> FulfillArea(const std::list<Coord>& border) {
