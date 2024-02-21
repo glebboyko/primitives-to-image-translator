@@ -180,7 +180,7 @@ class KRange {
     }
   }
 
- public:
+ private:
   bool is_empty_ = false;
   double min_angle_ = -kDegInCircle / 4;
   double max_angle_ = kDegInCircle / 4;
@@ -355,7 +355,7 @@ std::list<BaseSegment> BaseSegmentsGetter(
           cont_iter = iter;
         }
       }
-      if (cont_len > -1) {
+      if (cont_len >= 0) {
         auto cont = std::move(*cont_iter);
         ret_cont.cont.erase(cont_iter);
         cont.push_front(input.curr_point);
@@ -364,12 +364,10 @@ std::list<BaseSegment> BaseSegmentsGetter(
         } else {
           input.parent_ret->other.push_back(std::move(cont));
         }
+      } else if (vars.is_cont) {
+        input.parent_ret->cont.push_back({input.curr_point});
       } else {
-        if (vars.is_cont) {
-          input.parent_ret->cont.push_back({input.curr_point});
-        } else {
-          input.parent_ret->other.push_back({input.curr_point});
-        }
+        input.parent_ret->other.push_back({input.curr_point});
       }
 
       for (auto&& cont : ret_cont.cont) {
@@ -471,6 +469,10 @@ bool UniteNeighbours(
     }
 
     auto neighbour_iter = bitmap[neighbour.x][neighbour.y].value();
+    if (neighbour_iter == iter) {
+      continue;
+    }
+
     auto n_cont = *neighbour_iter;
     auto& [n_segm, n_dev, n_restr_move] = n_cont;
 
