@@ -4,22 +4,24 @@
 
 namespace PTIT {
 
-template <typename Container>
-concept ImageBitmap = requires(Container container) { container[0][0]; };
-
 template <typename Container, typename Translator>
 concept UnifiedTranslator =
     requires(Container container, Translator translator) {
-      ImageBitmap<Container>;
-      translator(container[0][0]);
+      translator(container, std::declval<int>(), std::declval<int>());
     };
 
 template <typename Container, typename Checker>
 concept AvailabilityTranslator =
     requires(Container container, Checker checker) {
-      ImageBitmap<Container>;
       UnifiedTranslator<Container, Checker>;
-      static_cast<bool>(checker(container[0][0]));
+      static_cast<bool>(
+          checker(container, std::declval<int>(), std::declval<int>()));
     };
+
+template <typename Container, typename Translator>
+concept RGBTranslator = requires(Container container, Translator translator) {
+  UnifiedTranslator<Container, Translator>;
+  translator(container, std::declval<int>(), std::declval<int>());
+};
 
 }  // namespace PTIT

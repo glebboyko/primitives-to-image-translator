@@ -8,7 +8,7 @@
 namespace PTIT {
 
 template <typename Container, typename Translator>
-  requires ImageBitmap<Container> && UnifiedTranslator<Container, Translator>
+  requires RGBTranslator<Container, Translator>
 void CreateImage(const char* image_file, const Container& image, ssize_t size_x,
                  ssize_t size_y, Translator translator) {
   std::ofstream img_file(image_file);
@@ -24,7 +24,7 @@ void CreateImage(const char* image_file, const Container& image, ssize_t size_x,
 
   for (ssize_t y = size_y - 1; y >= 0; --y) {
     for (ssize_t x = 0; x < size_x; ++x) {
-      const auto& [red, green, blue] = translator(image[x][y]);
+      const auto& [red, green, blue] = translator(image, x, y);
       img_file << red << " " << green << " " << blue << "\n";
     }
   }
