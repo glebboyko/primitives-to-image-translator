@@ -205,7 +205,8 @@ std::list<BaseSegment> BaseSegmentsGetter(
     if (!vars.process_ret) {
       auto init_k = GetKCoefficient({input.init_point, input.curr_point});
       if (input.k_range.InRange(init_k)) {
-        input.k_range = GetKRange({input.init_point, input.curr_point});
+        input.k_range.Intersect(
+            GetKRange({input.init_point, input.curr_point}));
         vars.is_cont = true;
       } else {
         input.init_point = input.curr_point;
@@ -214,8 +215,6 @@ std::list<BaseSegment> BaseSegmentsGetter(
         input.restr_move = None;
       }
 
-      bitmap[input.curr_point.x][input.curr_point.y] = false;
-
       for (auto neighbour :
            GetNeighbours(input.curr_point, bitmap.size(), bitmap[0].size())) {
         if (!bitmap[neighbour.x][neighbour.y] ||
@@ -223,6 +222,8 @@ std::list<BaseSegment> BaseSegmentsGetter(
                             input.restr_move)) {
           continue;
         }
+
+        bitmap[neighbour.x][neighbour.y] = false;
 
         StackData local_data;
         local_data.input = {.curr_point = neighbour,
@@ -415,6 +416,7 @@ std::list<Segment> BaseExtractPrimitives(
       if (!bitmap[x][y]) {
         continue;
       }
+      bitmap[x][y] = false;
 
       auto base_segments = BaseSegmentsGetter(bitmap, {x, y});
 
