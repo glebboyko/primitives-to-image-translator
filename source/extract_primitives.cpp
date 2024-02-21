@@ -7,7 +7,6 @@
 
 #include "primitives.hpp"
 #include "supply.hpp"
-#include <iostream>
 
 namespace PTIT {
 
