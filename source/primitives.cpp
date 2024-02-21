@@ -103,16 +103,39 @@ int& Circe::GetRadius() { return radius_; }
 int Circe::GetRadius() const { return radius_; }
 
 std::list<Coord> Circe::GetGraphic() const {
-  std::list<Coord> graphic;
-
+  // second quarter
+  std::list<Coord> quarter_graphic;
   int64_t sqr_radius = radius_ * radius_;
-  for (int x = center_.x - radius_; x <= center_.x + radius_; ++x) {
+  quarter_graphic.push_front({-radius_, 0});
+  for (int x = -radius_ + 1; x <= 0; ++x) {
     int64_t sqr_x = x * x;
-    int y_top = sqrt(sqr_radius - sqr_x);
+    int y = sqrt(sqr_radius - sqr_x);
 
-    graphic.push_front({x, y_top});
-    graphic.push_back({x, -y_top});
+    while (quarter_graphic.front().y < y - 1) {
+      quarter_graphic.push_front({x, quarter_graphic.front().y + 1});
+    }
+    quarter_graphic.push_front({x, y});
   }
+
+  // first quarter
+  std::list<Coord> graphic;
+  for (auto iter = std::next(quarter_graphic.begin());
+       iter != quarter_graphic.end(); ++iter) {
+    graphic.push_front({-iter->x, iter->y});
+  }
+
+  graphic.splice(graphic.cend(), std::move(quarter_graphic));
+
+  // third and fourth quarter
+  for (auto iter = std::next(graphic.rbegin());
+       iter != std::prev(graphic.rend()); ++iter) {
+    graphic.push_back({iter->x, -iter->y});
+  }
+
+  // moving to center
+  std::for_each(graphic.begin(), graphic.end(), [this](Coord& coord) {
+    coord = {coord.x + center_.x, coord.y + center_.y};
+  });
 
   return graphic;
 }
