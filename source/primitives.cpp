@@ -93,6 +93,25 @@ int Segment::GetBCoefficient() const {
          (b_point_.x - a_point_.x);
 }
 
+/*--------------------------------- triangle ---------------------------------*/
+Triangle::Triangle(const Coord& a_point, const Coord& b_point,
+                   const Coord& c_point)
+    : a_point_(a_point), b_point_(b_point), c_point_(c_point) {}
+
+std::tuple<Coord, Coord, Coord> Triangle::GetPoints() const {
+  return {a_point_, b_point_, c_point_};
+}
+
+std::list<Coord> Triangle::GetGraphic() const {
+  std::list<Coord> graphic;
+
+  graphic.splice(graphic.cend(), Segment(a_point_, b_point_).GetGraphic());
+  graphic.splice(graphic.cend(), Segment(b_point_, c_point_).GetGraphic());
+  graphic.splice(graphic.cend(), Segment(c_point_, a_point_).GetGraphic());
+
+  return graphic;
+}
+
 /*---------------------------------- circle ----------------------------------*/
 Circe::Circe(const PTIT::Coord& center, double radius)
     : center_(center), radius_(radius) {}

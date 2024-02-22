@@ -1,6 +1,7 @@
 #pragma once
 
 #include <list>
+#include <tuple>
 
 #include "concepts.hpp"
 
@@ -44,6 +45,21 @@ class Segment : public Primitive {
   Coord b_point_;
 
   int GetBCoefficient() const;
+};
+
+class Triangle : public Primitive {
+ public:
+  Triangle() = default;
+  Triangle(const Coord& a_point, const Coord& b_point, const Coord& c_point);
+
+  std::tuple<Coord, Coord, Coord> GetPoints() const;
+
+  std::list<Coord> GetGraphic() const override;
+
+ private:
+  Coord a_point_;
+  Coord b_point_;
+  Coord c_point_;
 };
 
 class Circe : public Primitive {
