@@ -15,4 +15,6 @@ float GetKCoefficient(const Segment& segment) {
 double DegToRad(double deg) { return deg * kPi / (kDegInCircle / 2); }
 double RadToDeg(double rad) { return rad * (kDegInCircle / 2) / kPi; }
 
+double TanToDeg(double tan) { return RadToDeg(atan(tan)); }
+
 }  // namespace PTIT

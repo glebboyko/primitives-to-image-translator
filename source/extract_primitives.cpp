@@ -35,8 +35,6 @@ std::list<Coord> GetNeighbours(Coord point, int x_size = -1, int y_size = -1) {
   return neighbours;
 }
 
-double TanToDeg(double tan) { return RadToDeg(atan(tan)); }
-
 class KRange {
  public:
   KRange(bool empty = false) : is_empty_(empty){};
@@ -350,7 +348,7 @@ Deviation ReverseDeviation(Deviation deviation) {
   return deviation;
 }
 
-bool UniteNeighbours(
+std::pair<bool, std::list<SCont>::iterator> UniteNeighbours(
     SCont cont, std::list<SCont>& segments,
     std::vector<std::vector<std::optional<std::list<SCont>::iterator>>>&
         bitmap) {
@@ -391,16 +389,16 @@ bool UniteNeighbours(
 
     bitmap[neighbour.x][neighbour.y].reset();
     bitmap[conn_point.x][conn_point.y].reset();
-    bitmap[segm.GetA().x][segm.GetA().y] = iter;
-    bitmap[segm.GetB().x][segm.GetB().y] = iter;
+
+    segments.push_back(cont);
+    bitmap[segm.GetA().x][segm.GetA().y] = std::prev(segments.end());
+    bitmap[segm.GetB().x][segm.GetB().y] = std::prev(segments.end());
 
     segments.erase(neighbour_iter);
-
-    *iter = cont;
-    return true;
+    return {true, segments.erase(iter)};
   }
 
-  return false;
+  return {false, std::next(iter)};
 }
 
 std::list<Segment> BaseExtractPrimitives(
@@ -453,17 +451,18 @@ std::list<Segment> BaseExtractPrimitives(
 
   // connecting
   for (auto iter = processed_raws.begin(); iter != processed_raws.end();) {
-    bool united = UniteNeighbours(*iter, processed_raws, conn_bitmap);
+    auto [connected, new_iter] =
+        UniteNeighbours(*iter, processed_raws, conn_bitmap);
+    if (connected) {
+      iter = new_iter;
+      continue;
+    }
 
     auto cont = *iter;
     std::swap(cont.segment.GetA(), cont.segment.GetB());
     cont.deviation = ReverseDeviation(cont.deviation);
 
-    united = united || UniteNeighbours(cont, processed_raws, conn_bitmap);
-
-    if (!united) {
-      ++iter;
-    }
+    iter = UniteNeighbours(cont, processed_raws, conn_bitmap).second;
   }
 
   std::list<Segment> segments;
