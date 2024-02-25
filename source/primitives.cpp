@@ -52,7 +52,10 @@ const Coord& Segment::GetB() const { return b_point_; }
 
 double Segment::GetAngle() const {
   auto k_coef = GetKCoefficient(*this);
-  return k_coef == FLT_MAX ? kDegInCircle / 4 : atan(k_coef);
+  double deg =
+      k_coef == FLT_MAX ? static_cast<double>(kDegInCircle) / 4 : atan(k_coef);
+  return a_point_ <= b_point_ ? deg
+                              : (static_cast<double>(kDegInCircle) / 2) + deg;
 }
 
 void Segment::SetLen(int len) {
@@ -161,7 +164,7 @@ std::list<Coord> Segment::GetArea(int radius) const {
   } else if (init_k == FLT_MAX) {
     norm_k = 0;
   } else {
-    norm_k = - (1 / init_k);
+    norm_k = -(1 / init_k);
   }
 
   Segment from_a({a_point_, a_point_});
