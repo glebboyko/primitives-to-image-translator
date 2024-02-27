@@ -17,6 +17,12 @@ Coord Coord::operator*(float coef) const {
   ret.y *= coef;
   return ret;
 }
+Coord Coord::operator/(float coef) const {
+  Coord ret = *this;
+  ret.x /= coef;
+  ret.y /= coef;
+  return ret;
+}
 
 bool operator==(const Coord& first, const Coord& second) noexcept {
   return first.x == second.x && first.y == second.y;

@@ -12,6 +12,7 @@ struct Coord {
   int y;
 
   Coord operator*(float coef) const;
+  Coord operator/(float coef) const;
 };
 
 bool operator==(const Coord&, const Coord&) noexcept;
