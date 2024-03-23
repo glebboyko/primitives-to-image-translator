@@ -24,6 +24,10 @@ bool operator>=(const Coord& first, const Coord& second) noexcept;
 
 double GetDistance(const Coord& first, const Coord& second) noexcept;
 
+double DegToRad(double deg);
+double RadToDeg(double rad);
+double TanToDeg(double tan);
+
 class Primitive {
  public:
   virtual std::list<Coord> GetGraphic() const = 0;

@@ -264,6 +264,11 @@ double GetDistance(const Coord& first, const Coord& second) noexcept {
   return sqrt((dx * dx) + (dy * dy));
 }
 
+double DegToRad(double deg) { return deg * kPi / (kDegInCircle / 2); }
+double RadToDeg(double rad) { return rad * (kDegInCircle / 2) / kPi; }
+
+double TanToDeg(double tan) { return RadToDeg(atan(tan)); }
+
 std::list<Coord> FulfillArea(const std::list<Coord>& border) {
   std::vector<Coord> sorted_border;
   sorted_border.reserve(border.size());
