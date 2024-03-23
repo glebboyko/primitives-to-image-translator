@@ -27,6 +27,7 @@ double GetDistance(const Coord& first, const Coord& second) noexcept;
 double DegToRad(double deg);
 double RadToDeg(double rad);
 double TanToDeg(double tan);
+double NormalizeDeg(double deg);
 
 class Primitive {
  public:
