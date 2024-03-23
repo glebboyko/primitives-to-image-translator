@@ -58,10 +58,8 @@ const Coord& Segment::GetB() const { return b_point_; }
 
 double Segment::GetAngle() const {
   auto k_coef = GetKCoefficient(*this);
-  double deg =
-      k_coef == FLT_MAX ? static_cast<double>(kDegInCircle) / 4 : atan(k_coef);
-  return a_point_ <= b_point_ ? deg
-                              : (static_cast<double>(kDegInCircle) / 2) + deg;
+  double rad = k_coef == FLT_MAX ? static_cast<double>(kPi) / 2 : atan(k_coef);
+  return a_point_ <= b_point_ ? rad : static_cast<double>(kPi) + rad;
 }
 
 void Segment::SetLen(int len) {
